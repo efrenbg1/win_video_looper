@@ -26,12 +26,12 @@ def _task(q):
 
         if not len(files):
             gui.empty()
-            time.sleep(5)
+            time.sleep(15)
             continue
 
         try:
             vlc.play(usb, files)
-
+            gui.playing()
             while drive.find() == usb:
                 if not q.empty():
                     vlc.stop()

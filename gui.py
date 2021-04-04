@@ -10,6 +10,7 @@ title = "Video Looper"
 root = Tk()
 root.attributes("-fullscreen", True)
 root.title(title)
+root.config(cursor="none")
 
 
 _bg = root.cget('bg')
@@ -43,7 +44,7 @@ def paint():
 
 def waiting():
     global _label, _img, _path
-    _label.config(text='Inserte un dispositivo USB\npara reproducir en bucle')
+    _label.config(text='Inserte un dispositivo USB\npara reproducir en bucle\no Esc para salir')
     img = ImageTk.PhotoImage(file=os.path.join(_path, "usb.png"))
     _img.configure(image=img)
     _img.image = img
@@ -73,6 +74,10 @@ def empty():
     _img.image = img
 
 
+def esc(event):
+    close()
+
+
 def close():
     if messagebox.askokcancel("Quit", "Si se cierra el programa no se auto reproducirá al insertar un USB. Está seguro desea salir?"):
         vlc.stop()
@@ -80,7 +85,7 @@ def close():
         root.destroy()
 
 
-root.bind('<Esc>', close)
+root.bind('<Escape>', esc)
 root.protocol("WM_DELETE_WINDOW", close)
 
 

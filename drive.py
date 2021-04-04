@@ -14,8 +14,8 @@ if sys.platform == 'win32':
         return None
 else:
     def find():
-        for d in os.listdir('/media'):
-            d = '/media/' + d
+        for d in os.listdir('/media/pi'):
+            d = '/media/pi/' + d
             if not os.path.ismount(d):
                 continue
             return d

@@ -42,6 +42,7 @@ def _task(q):
             vlc.stop()
             exit()
 
+        gui.paint()
         vlc.stop()
 
 

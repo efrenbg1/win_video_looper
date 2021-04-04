@@ -1,5 +1,6 @@
 from tkinter import messagebox, Label, Tk
-from PIL import Image, ImageTk
+from PIL import ImageTk
+from PIL import Image
 import os
 import vlc
 import worker
@@ -7,16 +8,23 @@ import worker
 title = "Video Looper"
 
 root = Tk()
+root.attributes("-fullscreen", True)
 root.title(title)
-root.geometry("280x180")
 
+
+_bg = root.cget('bg')
 _label = None
 _img = None
 _path = os.path.join(os.getcwd(), 'img')
 
 
 def paint():
-    global _label, _img, _path
+    global _label, _img, _path, _bg
+
+    for ele in root.winfo_children():
+        ele.destroy()
+
+    root.configure(background=_bg)
 
     Label(root, text='').pack()
 
@@ -44,17 +52,17 @@ def waiting():
 def reading():
     global _label, _img, _path
     _label.config(text='Buscando archivos para\nreproducir...')
-    img = ImageTk.PhotoImage(file=os.path.join(_path, "loading.png"))
+    imge = Image.open(os.path.join(_path, "loading.png"))
+    img = ImageTk.PhotoImage(imge)
     _img.configure(image=img)
     _img.image = img
 
 
 def playing():
-    global _label, _img, _path
-    _label.config(text='Reproduciendo...\n')
-    img = ImageTk.PhotoImage(file=os.path.join(_path, "playing.png"))
-    _img.configure(image=img)
-    _img.image = img
+    global _label, _img, _path, root
+    for ele in root.winfo_children():
+        ele.destroy()
+    root.configure(background='black')
 
 
 def empty():
@@ -72,6 +80,7 @@ def close():
         root.destroy()
 
 
+root.bind('<Esc>', close)
 root.protocol("WM_DELETE_WINDOW", close)
 
 

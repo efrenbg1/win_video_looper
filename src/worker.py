@@ -4,9 +4,7 @@ from threading import Thread
 
 def _task(q):
     import time
-    import vlc
-    import drive
-    import gui
+    from src import vlc, gui, drive
 
     while True:
         if not q.empty():

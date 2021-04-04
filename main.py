@@ -1,6 +1,4 @@
-import vlc
-import worker
-import gui
+from src import vlc, worker, gui
 
 
 vlc.stop()

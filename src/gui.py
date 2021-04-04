@@ -2,8 +2,7 @@ from tkinter import messagebox, Label, Tk
 from PIL import ImageTk
 from PIL import Image
 import os
-import vlc
-import worker
+from src import vlc, worker
 
 title = "Video Looper"
 

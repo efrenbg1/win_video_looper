@@ -1,1 +1,1 @@
-pip install WMI, Pillow
+pip install WMI Pillow

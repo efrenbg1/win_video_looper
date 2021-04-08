@@ -15,7 +15,7 @@ else:
 def play(drive, files):
     stop()
     os.chdir(drive)
-    subprocess.Popen([_vlc, *files, '--loop', '--fullscreen', '--no-video-title', '-Idummy', '--mouse-hide-timeout=0'])
+    subprocess.Popen([_vlc, *files, '--loop', '--fullscreen', '--no-video-title', '-Idummy', '--mouse-hide-timeout=0', '--video-on-top'])
 
 
 def stop():

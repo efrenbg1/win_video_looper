@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+        integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+    <title>{{ hostname }} | Win Video Looper</title>
+
+    <style>
+        body {
+            background: url('img/background.jpg') no-repeat center fixed;
+            background-size: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="modal fade" tabindex="-1" id="modal">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-body mb-3 container" id="theater" style="display: none;">
+                    <div class="row text-center d-flex justify-content-left mb-4 ml-2">
+                        <a href="javascript:home()">
+                            <i class="bi bi-arrow-left"></i>&nbsp;Volver
+                        </a>
+                    </div>
+                    <div class="row d-flex justify-content-center" id="player"></div>
+                </div>
+                <div class="modal-body mb-3 container" id="list">
+                    <div class="row text-center d-flex justify-content-left mb-4 ml-2">
+                        <a href="javascript:logout()">
+                            <i class="bi bi-arrow-left"></i>&nbsp;Salir
+                        </a>
+                    </div>
+                    <div class="row d-flex justify-content-center">
+                        <img src="/img/usb.png" width="80" height="80">
+                    </div>
+                    <div class="row d-flex justify-content-center mt-3 mb-4">
+                        <h6><span class="text-info">{{ hostname }}</span> - Win Video Looper</h6>
+                    </div>
+                    <div class="row d-flex justify-content-center mx-1 mt-4">
+                        <div class="alert alert-warning" role="alert" style="display: none;" id="file">
+                            <i class="bi bi-folder2-open"></i>&nbsp;No se ha seleccionado ningún archivo
+                        </div>
+                        <div class="alert alert-success" role="alert" style="display: none;" id="upload">
+                            <i class="bi bi-cloud-arrow-up"></i>&nbsp;Archivo subido correctamente
+                        </div>
+                        <div class="alert alert-success" role="alert" style="display: none;" id="delete">
+                            <i class="bi bi-trash"></i>&nbsp;Archivo eliminado correctamente
+                        </div>
+                        <div class="alert alert-danger" role="alert" style="display: none;" id="path">
+                            <i class="bi bi-bug"></i>&nbsp;No se ha podido localizar el archivo
+                        </div>
+                        <div class="alert alert-danger" role="alert" style="display: none;" id="exists">
+                            <i class="bi bi-exclamation-triangle"></i>&nbsp;Ya existe un archivo con el mismo nombre.
+                            Para
+                            remplazarlo
+                            elimine el archivo antes de subirlo
+                        </div>
+                    </div>
+                    <div class="row d-flex justify-content-center mb-4">
+                        <button type="button" class="btn btn-outline-primary mx-1 btn-lg" onclick="upload()">
+                            <i class="bi bi-cloud-arrow-up"></i>&nbsp;Subir
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary mx-1 btn-lg" onclick="playpause()">
+                            {% if status == "play" %}
+                            <i class="bi bi-pause"></i>&nbsp;Parar
+                            {% else %}
+                            <i class="bi bi-play"></i>&nbsp;Reproducir
+                            {% endif %}
+                        </button>
+                    </div>
+                    <div class="row table-responsive mx-auto">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Archivo</th>
+                                    <th scope="col">Fecha</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for video in videos %}
+                                <tr>
+                                    <th class="align-middle">
+                                        <a href="javascript:watch('{{ video.filename }}')">{{ video.filename }}</a>
+                                    </th>
+                                    <td class="align-middle">
+                                        {{ video.date }}
+                                    </td>
+                                    <td class="d-flex flex-row-reverse">
+                                        <button type="button" class="btn btn-outline-danger mx-1"
+                                            onclick="remove('{{ video.filename }}')" role="button">
+                                            <i class="bi bi-trash"></i>&nbsp;Eliminar
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary mx-1"
+                                            onclick="download('{{ video.filename }}')" role="button">
+                                            <i class="bi bi-download"></i>&nbsp;Descargar
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form action="/upload" method="POST" enctype="multipart/form-data" style="display: none;" id="upload_form">
+        <input type="file" id="upload_file" name="file">
+    </form>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns"
+        crossorigin="anonymous"></script>
+</body>
+
+<script>
+    function watch(filename) {
+        $('#player')[0].innerHTML = `<video width="400" controls autoplay><source src="watch/${filename}">Your browser does not support the video tag.</video>`;
+        $('#list').hide();
+        $('#theater').show();
+    }
+
+    function download(filename) {
+        window.open('/download/' + filename, '_blank')
+    }
+
+    function remove(filename) {
+        if (!confirm('¿Seguro desea eliminar el video?')) return;
+        location.href = '/delete?filename=' + filename;
+    }
+
+    function upload() {
+        document.getElementById('upload_file').click();
+    }
+
+    function logout() {
+        document.cookie = 'secret=; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        location.href = '/login';
+    }
+
+    function playpause() {
+        location.href = '/playpause';
+    }
+
+    function home() {
+        $('#player')[0].innerHTML = '';
+        $('#list').show();
+        $('#theater').hide();
+    }
+
+    if (document.location.href.indexOf("?upload") > -1) {
+        document.getElementById('upload').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?file") > -1) {
+        document.getElementById('file').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?change") > -1) {
+        document.getElementById('change').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?delete") > -1) {
+        document.getElementById('delete').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?path") > -1) {
+        document.getElementById('path').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?exists") > -1) {
+        document.getElementById('exists').style.display = 'flex';
+    }
+    document.getElementById("upload_file").onchange = function () {
+        document.getElementById("upload_form").submit();
+    };
+
+    $('#modal').modal({
+        backdrop: 'static',
+        keyboard: false
+    });
+</script>
+
+</html>

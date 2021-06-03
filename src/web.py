@@ -4,7 +4,7 @@ import os
 import urllib
 import time
 import threading
-from src import drive
+from src import vlc, drive
 
 
 hostname = os.environ['COMPUTERNAME']
@@ -15,8 +15,16 @@ storage = os.path.realpath(os.path.join(Path(__file__).parent, '../videos'))
 if not os.path.exists(storage):
     os.makedirs(storage)
 
-status = "pause"
-lstatus = threading.Lock()
+_status = "pause"
+_lstatus = threading.Lock()
+
+
+def status():
+    global _status, _lstatus
+    if drive.find() != None:
+        return 'usb'
+    with _lstatus:
+        return _status
 
 
 @app.route('/login')
@@ -28,7 +36,7 @@ def login():
 
 @app.route("/")
 def root():
-    global hostname, status, lstatus
+    global hostname
     if request.cookies.get('secret') != app.secret:
         return redirect('/login')
     videos = []
@@ -40,20 +48,22 @@ def root():
             'filename': video,
             'date': date
         })
-    with lstatus:
-        return render_template('index.html', hostname=hostname, videos=videos, status=status)
+    return render_template('index.html', hostname=hostname, videos=videos, status=status())
 
 
 @app.route("/playpause")
 def playpause():
-    global status, lstatus
+    global _status, _lstatus
     if request.cookies.get('secret') != app.secret:
         return redirect('/login')
-    with lstatus:
-        if status == "play":
-            status = "pause"
+    if status() == 'usb':
+        return redirect('/?usb')
+    with _lstatus:
+        if _status == "play":
+            _status = "pause"
         else:
-            status = "play"
+            _status = "play"
+    vlc.stop()
     return redirect('/')
 
 
@@ -93,29 +103,33 @@ def upload():
     if os.path.commonprefix((os.path.realpath(path), storage)) != storage:
         return redirect('/?path')
 
+    if status() == "play":
+        return redirect('/?status')
+
     file.save(path)
     return redirect('/?upload')
 
 
 @app.route('/delete')
 def delete():
+    global _lstatus
     if request.cookies.get('secret') != app.secret:
         return "401 (Unauthorized)", 401
 
     file = request.args.get('filename')
-    print(file)
     if file is None:
         return redirect('/?file')
 
     file = urllib.parse.quote(file)
-    print(file)
     if file not in os.listdir(storage):
         return redirect('/?path')
 
     path = os.path.join(storage, file)
-    print(os.path.realpath(path))
     if os.path.commonprefix((os.path.realpath(path), storage)) != storage:
         return redirect('/?path')
+
+    if status() == "play":
+        return redirect('/?status')
 
     os.remove(path)
     return redirect('/?delete')
@@ -131,12 +145,3 @@ def start(settings):
     daemon = threading.Thread(target=run, args=(settings['host'], settings['port'],), daemon=True)
     daemon.setDaemon(True)
     daemon.start()
-
-
-def read():
-    global status, lstatus
-    with lstatus:
-        if status == "play":
-            return drive.read(storage)
-        else:
-            return []

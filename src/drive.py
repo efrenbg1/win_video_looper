@@ -3,14 +3,13 @@ import mimetypes
 import sys
 
 if sys.platform == 'win32':
-    import wmi
-    c = wmi.WMI()
+    import subprocess
 
     def find():
-        for disk in c.Win32_LogicalDisk():
-            if disk.DriveType != 2:
-                continue
-            return disk.DeviceID
+        out = subprocess.Popen(['wmic', 'logicaldisk', 'where', 'drivetype=2', 'get', 'DeviceID'],  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, _ = out.communicate()
+        if b"DeviceID  \r\r\n" in stdout:
+            return stdout[13:15].decode('utf-8')
         return None
 else:
     def find():

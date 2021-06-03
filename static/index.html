@@ -45,6 +45,13 @@
                         <h6><span class="text-info">{{ hostname }}</span> - Win Video Looper</h6>
                     </div>
                     <div class="row d-flex justify-content-center mx-1 mt-4">
+                        <div class="alert alert-warning" role="alert" style="display: none;" id="status">
+                            <i class="bi bi-pause"></i>&nbsp;Pare el reproductor antes de cambiar los archivos
+                        </div>
+                        <div class="alert alert-warning" role="alert" style="display: none;" id="usb">
+                            <i class="bi bi-hdd"></i>&nbsp;El reproductor está en modo USB. Para parar la reproducción
+                            quite el USB
+                        </div>
                         <div class="alert alert-warning" role="alert" style="display: none;" id="file">
                             <i class="bi bi-folder2-open"></i>&nbsp;No se ha seleccionado ningún archivo
                         </div>
@@ -69,10 +76,10 @@
                             <i class="bi bi-cloud-arrow-up"></i>&nbsp;Subir
                         </button>
                         <button type="button" class="btn btn-outline-secondary mx-1 btn-lg" onclick="playpause()">
-                            {% if status == "play" %}
-                            <i class="bi bi-pause"></i>&nbsp;Parar
-                            {% else %}
+                            {% if status == "pause" %}
                             <i class="bi bi-play"></i>&nbsp;Reproducir
+                            {% else %}
+                            <i class="bi bi-pause"></i>&nbsp;Parar
                             {% endif %}
                         </button>
                     </div>
@@ -178,6 +185,12 @@
     }
     if (document.location.href.indexOf("?exists") > -1) {
         document.getElementById('exists').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?status") > -1) {
+        document.getElementById('status').style.display = 'flex';
+    }
+    if (document.location.href.indexOf("?usb") > -1) {
+        document.getElementById('usb').style.display = 'flex';
     }
     document.getElementById("upload_file").onchange = function () {
         document.getElementById("upload_form").submit();

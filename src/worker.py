@@ -4,7 +4,6 @@ from threading import Thread
 
 def _task(q):
     import time
-    import traceback
     from src import vlc, gui, drive, web
 
     while True:
@@ -17,22 +16,15 @@ def _task(q):
         usb = drive.find()
 
         if usb is None:
-            files = web.read()
+            usb = web.storage
+            if web.status() != 'play':
+                time.sleep(5)
+                continue
+            files = drive.read(usb)
             if not len(files):
                 time.sleep(5)
                 continue
-            try:
-                vlc.play(web.storage, files)
-                gui.playing()
-                while len(web.read()) and drive.find() == None:
-                    if not q.empty():
-                        vlc.stop()
-                        exit()
-                    time.sleep(1)
-            except Exception:
-                traceback.print_exc()
-                vlc.stop()
-                exit()
+            mode = 'web'
         else:
             gui.reading()
             files = drive.read(usb)
@@ -40,18 +32,26 @@ def _task(q):
                 gui.empty()
                 time.sleep(15)
                 continue
-            try:
-                vlc.play(usb, files)
-                gui.playing()
-                while drive.find() == usb:
-                    if not q.empty():
-                        vlc.stop()
-                        exit()
-                    time.sleep(1)
-            except Exception:
-                traceback.print_exc()
-                vlc.stop()
-                exit()
+            mode = 'usb'
+
+        try:
+            vlc.play(usb, files)
+            gui.playing()
+            while True:
+                if mode == 'web' and (web.status() != 'play' or drive.find() != None):
+                    break
+                if mode == 'usb' and drive.find() != usb:
+                    break
+                if not q.empty():
+                    vlc.stop()
+                    exit()
+                if not vlc.check():
+                    break
+                time.sleep(1)
+        except Exception as e:
+            print(e)
+            vlc.stop()
+            exit()
 
         gui.paint()
         vlc.stop()

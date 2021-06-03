@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import psutil
 
 if sys.platform == 'win32':
     _vlc = 'C:/Program Files/VideoLAN/VLC/vlc.exe'
@@ -15,7 +16,14 @@ else:
 def play(drive, files):
     stop()
     os.chdir(drive)
-    #subprocess.Popen([_vlc, *files, '--loop', '--fullscreen', '--no-video-title', '-Idummy', '--mouse-hide-timeout=0', '--video-on-top'])
+    subprocess.Popen([_vlc, *files, '--loop', '--fullscreen', '--no-video-title', '-Idummy', '--mouse-hide-timeout=0', '--video-on-top'])
+
+
+def check():
+    if sys.platform == 'win32':
+        return "vlc.exe" in (p.name() for p in psutil.process_iter())
+    else:
+        return "vlc" in (p.name() for p in psutil.process_iter())
 
 
 def stop():

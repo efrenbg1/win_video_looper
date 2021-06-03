@@ -1,21 +1,25 @@
 from flask import Flask, request, redirect, send_from_directory, render_template
 from pathlib import Path
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 import urllib
 import time
 import threading
-from src import vlc, drive
-
-
-hostname = os.environ['COMPUTERNAME']
+from src import vlc, drive, hostname
 
 app = Flask(__name__, template_folder="../static")
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["20 per minute"]
+)
 
 storage = os.path.realpath(os.path.join(Path(__file__).parent, '../videos'))
 if not os.path.exists(storage):
     os.makedirs(storage)
 
-_status = "pause"
+_status = "play"
 _lstatus = threading.Lock()
 
 
@@ -31,12 +35,11 @@ def status():
 def login():
     if request.cookies.get('secret') == app.secret:
         return redirect('/')
-    return render_template('login.html', hostname=hostname)
+    return render_template('login.html', hostname=hostname.get())
 
 
 @app.route("/")
 def root():
-    global hostname
     if request.cookies.get('secret') != app.secret:
         return redirect('/login')
     videos = []
@@ -48,7 +51,7 @@ def root():
             'filename': video,
             'date': date
         })
-    return render_template('index.html', hostname=hostname, videos=videos, status=status())
+    return render_template('index.html', hostname=hostname.get(), videos=videos, status=status())
 
 
 @app.route("/playpause")

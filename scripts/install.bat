@@ -1,1 +1,1 @@
-pip install WMI Pillow
+pip install Pillow flask Flask-Limiter

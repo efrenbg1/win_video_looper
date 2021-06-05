@@ -138,13 +138,13 @@ def delete():
     return redirect('/?delete')
 
 
-def run(host, port):
+def run():
     app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.run(host=host, port=port)
+    app.run(host='0.0.0.0', port=80)
 
 
-def start(settings):
-    app.secret = settings['secret']
-    daemon = threading.Thread(target=run, args=(settings['host'], settings['port'],), daemon=True)
+def start(secret):
+    app.secret = secret
+    daemon = threading.Thread(target=run, daemon=True)
     daemon.setDaemon(True)
     daemon.start()

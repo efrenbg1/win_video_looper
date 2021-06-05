@@ -67,7 +67,7 @@ def playing():
 
 def empty():
     global _label, _img, _path
-    _label.config(text='No se han encontrado archivos\npara reproducir!')
+    _label.config(text='¡No se han encontrado archivos\npara reproducir!')
     img = ImageTk.PhotoImage(file=os.path.join(_path, "empty.png"))
     _img.configure(image=img)
     _img.image = img

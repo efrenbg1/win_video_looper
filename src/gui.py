@@ -2,7 +2,7 @@ from tkinter import messagebox, Label, Tk
 from PIL import ImageTk
 from PIL import Image
 import os
-from src import vlc, worker, hostname
+from src import vlc, worker, computer
 
 title = "Video Looper"
 
@@ -43,7 +43,7 @@ def paint():
 
 def waiting():
     global _label, _img, _path
-    _label.config(text='Para reproducir en bucle:\n\n1. Inserte un dispositivo USB\n2. O vaya a: http://{}:8080\n\n\n(Esc para salir)'.format(hostname.get()))
+    _label.config(text='Para reproducir en bucle:\n\n1. Inserte un dispositivo USB\n2. O vaya a: http://{}:8080\n\n\n(Esc para salir)'.format(computer.ip()))
     img = ImageTk.PhotoImage(file=os.path.join(_path, "usb.png"))
     _img.configure(image=img)
     _img.image = img

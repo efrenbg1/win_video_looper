@@ -6,7 +6,9 @@ import os
 import urllib
 import time
 import threading
-from src import vlc, drive, hostname
+from src import vlc, drive, computer
+from urllib.parse import unquote
+
 
 app = Flask(__name__, template_folder="../static")
 limiter = Limiter(
@@ -19,7 +21,7 @@ storage = os.path.realpath(os.path.join(Path(__file__).parent, '../videos'))
 if not os.path.exists(storage):
     os.makedirs(storage)
 
-_status = "play"
+_status = "pause"
 _lstatus = threading.Lock()
 
 
@@ -35,7 +37,7 @@ def status():
 def login():
     if request.cookies.get('secret') == app.secret:
         return redirect('/')
-    return render_template('login.html', hostname=hostname.get())
+    return render_template('login.html', name=computer.name())
 
 
 @app.route("/")
@@ -48,10 +50,11 @@ def root():
         date = time.localtime(date)
         date = time.strftime('%d/%m/%Y %H:%M ', date)
         videos.append({
-            'filename': video,
+            'url': video,
+            'filename': unquote(video),
             'date': date
         })
-    return render_template('index.html', hostname=hostname.get(), videos=videos, status=status())
+    return render_template('index.html', name=computer.name(), videos=videos, status=status(), count=len(videos))
 
 
 @app.route("/playpause")

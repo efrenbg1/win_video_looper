@@ -1,1 +1,1 @@
-pip install Pillow flask Flask-Limiter
+pip install Pillow flask Flask-Limiter psutil

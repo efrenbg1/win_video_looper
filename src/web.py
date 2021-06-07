@@ -23,6 +23,21 @@ if not os.path.exists(storage):
 
 _status = "pause"
 _lstatus = threading.Lock()
+_timeout = None
+
+
+def _autoplay():
+    global _status, _lstatus
+    with _lstatus:
+        _status = "play"
+
+
+def autoplay():
+    global _timeout
+    if _timeout != None:
+        _timeout.cancel()
+    _timeout = threading.Timer(20.0, _autoplay)
+    _timeout.start()
 
 
 def status():
@@ -70,6 +85,7 @@ def playpause():
         else:
             _status = "play"
     vlc.stop()
+    autoplay()
     return redirect('/')
 
 
@@ -97,6 +113,8 @@ def upload():
     if request.cookies.get('secret') != app.secret:
         return "401 (Unauthorized)", 401
 
+    autoplay()
+
     file = request.files.get('file')
     if file is None:
         return redirect('/?file')
@@ -121,6 +139,8 @@ def delete():
     global _lstatus
     if request.cookies.get('secret') != app.secret:
         return "401 (Unauthorized)", 401
+
+    autoplay()
 
     file = request.args.get('filename')
     if file is None:

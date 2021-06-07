@@ -29,6 +29,8 @@ def read(drive):
                 continue
             if mime[0].startswith('video'):
                 videos.append(file)
+            if mime[0].startswith('image'):
+                videos.append(file)
         return videos
     except Exception as e:
         print(e)

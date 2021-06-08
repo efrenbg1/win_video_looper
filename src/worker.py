@@ -1,6 +1,6 @@
 from queue import Queue
 from threading import Thread
-
+import os
 
 def _task(q):
     import time
@@ -16,14 +16,23 @@ def _task(q):
         usb = drive.find()
 
         if usb is None:
-            usb = web.storage
             if web.status() != 'play':
                 time.sleep(5)
                 continue
-            files = drive.read(usb)
-            if not len(files):
+            files = drive.read(web.storage1)
+            featured = drive.read(web.storage2)
+            if not len(files) and not len(featured):
                 time.sleep(5)
                 continue
+
+            l = []
+            for f in files:
+                l.append(os.path.join('files', f))
+                for f in featured:
+                    l.append(os.path.join('featured', f))
+
+            files = l
+            usb = web.storage
             mode = 'web'
         else:
             gui.reading()

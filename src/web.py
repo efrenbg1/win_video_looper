@@ -17,11 +17,17 @@ limiter = Limiter(
     default_limits=["20 per minute"]
 )
 
-storage = os.path.realpath(os.path.join(Path(__file__).parent, '../videos'))
+storage = os.path.realpath(os.path.join(Path(__file__).parent, '../storage'))
 if not os.path.exists(storage):
     os.makedirs(storage)
+storage1 = os.path.realpath(os.path.join(Path(__file__).parent, '../storage/files'))
+if not os.path.exists(storage1):
+    os.makedirs(storage1)
+storage2 = os.path.realpath(os.path.join(Path(__file__).parent, '../storage/featured'))
+if not os.path.exists(storage2):
+    os.makedirs(storage2)
 
-_status = "pause"
+_status = "play"
 _lstatus = threading.Lock()
 _timeout = None
 
@@ -36,7 +42,7 @@ def autoplay():
     global _timeout
     if _timeout != None:
         _timeout.cancel()
-    _timeout = threading.Timer(20.0, _autoplay)
+    _timeout = threading.Timer(5*60.0, _autoplay)
     _timeout.start()
 
 
@@ -59,17 +65,27 @@ def login():
 def root():
     if request.cookies.get('secret') != app.secret:
         return redirect('/login')
-    videos = []
-    for video in os.listdir(storage):
-        date = os.path.getmtime(os.path.join(storage, video))
+    files = []
+    featured = []
+    for f in os.listdir(storage1):
+        date = os.path.getmtime(os.path.join(storage1, f))
         date = time.localtime(date)
         date = time.strftime('%d/%m/%Y %H:%M ', date)
-        videos.append({
-            'url': video,
-            'filename': unquote(video),
+        files.append({
+            'url': f,
+            'filename': unquote(f),
             'date': date
         })
-    return render_template('index.html', name=computer.name(), videos=videos, status=status(), count=len(videos))
+    for f in os.listdir(storage2):
+        date = os.path.getmtime(os.path.join(storage2, f))
+        date = time.localtime(date)
+        date = time.strftime('%d/%m/%Y %H:%M ', date)
+        featured.append({
+            'url': f,
+            'filename': unquote(f),
+            'date': date
+        })
+    return render_template('index.html', name=computer.name(), featured=featured, files=files, status=status())
 
 
 @app.route("/playpause")
@@ -94,71 +110,63 @@ def static_files(path):
     return send_from_directory('../static/', path)
 
 
-@app.route('/watch/<path:path>')
-def watch_videos(path):
+@app.route('/storage/<folder>/<action>/<file>')
+@app.route('/storage/<folder>/<action>', methods=["POST"])
+def api(folder, action, file=""):
     if request.cookies.get('secret') != app.secret:
-        return "401 (Unauthorized)", 401
-    return send_from_directory(storage, urllib.parse.quote(path))
-
-
-@app.route('/download/<path:path>')
-def download_videos(path):
-    if request.cookies.get('secret') != app.secret:
-        return "401 (Unauthorized)", 401
-    return send_from_directory(storage, urllib.parse.quote(path), as_attachment=True)
-
-
-@app.route('/upload', methods=["POST"])
-def upload():
-    if request.cookies.get('secret') != app.secret:
-        return "401 (Unauthorized)", 401
-
-    autoplay()
-
-    file = request.files.get('file')
-    if file is None:
-        return redirect('/?file')
-
-    filename = urllib.parse.quote(file.filename)
-    if filename in os.listdir(storage):
-        return redirect('/?exists')
-
-    path = os.path.join(storage, filename)
-    if os.path.commonprefix((os.path.realpath(path), storage)) != storage:
-        return redirect('/?path')
-
-    if status() == "play":
-        return redirect('/?status')
-
-    file.save(path)
-    return redirect('/?upload')
-
-
-@app.route('/delete')
-def delete():
-    global _lstatus
-    if request.cookies.get('secret') != app.secret:
-        return "401 (Unauthorized)", 401
-
-    autoplay()
-
-    file = request.args.get('filename')
-    if file is None:
-        return redirect('/?file')
+        return redirect('/login')
 
     file = urllib.parse.quote(file)
-    if file not in os.listdir(storage):
-        return redirect('/?path')
+    if folder == "featured":
+        folder = storage2
+    else:
+        folder = storage1
 
-    path = os.path.join(storage, file)
-    if os.path.commonprefix((os.path.realpath(path), storage)) != storage:
-        return redirect('/?path')
+    if action == "watch" and request.method == "GET":
+        return send_from_directory(folder, file)
 
-    if status() == "play":
-        return redirect('/?status')
+    elif action == "download" and request.method == "GET":
+        return send_from_directory(folder, file, as_attachment=True)
 
-    os.remove(path)
-    return redirect('/?delete')
+    elif action == "delete" and request.method == "GET":
+        global _lstatus
+        autoplay()
+
+        if file not in os.listdir(folder):
+            return redirect('/?path')
+
+        path = os.path.join(folder, file)
+        if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
+            return redirect('/?path')
+
+        if status() == "play":
+            return redirect('/?status')
+
+        os.remove(path)
+        return redirect('/?delete')
+
+    elif action == "upload" and request.method == "POST":
+        autoplay()
+
+        file = request.files.get('file')
+        if file is None:
+            return redirect('/?file')
+
+        filename = urllib.parse.quote(file.filename)
+        if filename in os.listdir(folder):
+            return redirect('/?exists')
+
+        path = os.path.join(folder, filename)
+        if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
+            return redirect('/?path')
+
+        if status() == "play":
+            return redirect('/?status')
+
+        file.save(path)
+        return redirect('/?upload')
+
+    return "400 (Bad Request)", 400
 
 
 def run():

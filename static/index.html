@@ -72,10 +72,16 @@
                         </div>
                     </div>
                     <div class="row d-flex justify-content-center mb-4">
-                        <button type="button" class="btn btn-outline-primary mx-1 btn-lg" onclick="upload()">
+                        <button type="button" class="btn btn-outline-primary mx-1 btn-lg mt-1"
+                            onclick="upload('featured')">
+                            <i class="bi bi-cloud-arrow-up"></i>&nbsp;Subir destacado
+                        </button>
+                        <button type="button" class="btn btn-outline-primary mx-1 btn-lg mt-1"
+                            onclick="upload('files')">
                             <i class="bi bi-cloud-arrow-up"></i>&nbsp;Subir
                         </button>
-                        <button type="button" class="btn btn-outline-secondary mx-1 btn-lg" onclick="playpause()">
+                        <button type="button" class="btn btn-outline-secondary mx-1 btn-lg mt-1"
+                            onclick="location.href = '/playpause'">
                             {% if status == "pause" %}
                             <i class="bi bi-play"></i>&nbsp;Reproducir
                             {% else %}
@@ -83,31 +89,70 @@
                             {% endif %}
                         </button>
                     </div>
-                    <div class="row table-responsive mx-auto">
+                    <h4>Destacado ({{ featured|length }}):</h4>
+                    <div class="row table-responsive mx-auto mt-3 mb-4">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th scope="col">Archivo ({{ count }})</th>
+                                    <th scope="col">Nombre</th>
                                     <th scope="col">Fecha</th>
                                     <th scope="col"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for video in videos %}
+                                {% for file in featured %}
                                 <tr>
                                     <th class="align-middle">
-                                        <a href="javascript:watch('{{ video.url }}')">{{ video.filename }}</a>
+                                        <a href="javascript:watch('featured','{{ file.url }}')">{{ file.filename }}</a>
                                     </th>
                                     <td class="align-middle">
-                                        {{ video.date }}
+                                        {{ file.date }}
                                     </td>
                                     <td class="d-flex flex-row-reverse">
                                         <button type="button" class="btn btn-outline-danger mx-1"
-                                            onclick="remove('{{ video.url }}')" role="button">
+                                            onclick="if (confirm('¿Seguro desea eliminar el archivo?')) location.href = '/storage/featured/delete/{{ file.url }}'"
+                                            role="button">
                                             <i class="bi bi-trash"></i>&nbsp;Eliminar
                                         </button>
                                         <button type="button" class="btn btn-outline-primary mx-1"
-                                            onclick="download('{{ video.url }}')" role="button">
+                                            onclick="window.open('/storage/featured/download/{{ file.filename }}', '_blank')"
+                                            role="button">
+                                            <i class="bi bi-download"></i>&nbsp;Descargar
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <h4>Archivos ({{ files|length }}):</h4>
+                    <div class="row table-responsive mx-auto mt-3 mb-4">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Nombre</th>
+                                    <th scope="col">Fecha</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in files %}
+                                <tr>
+                                    <th class="align-middle">
+                                        <a href="javascript:watch('files','{{ file.url }}')">{{ file.filename }}</a>
+                                    </th>
+                                    <td class="align-middle">
+                                        {{ file.date }}
+                                    </td>
+                                    <td class="d-flex flex-row-reverse">
+                                        <button type="button" class="btn btn-outline-danger mx-1"
+                                            onclick="if (confirm('¿Seguro desea eliminar el archivo?')) location.href = '/storage/files/delete/{{ file.url }}'"
+                                            role="button">
+                                            <i class="bi bi-trash"></i>&nbsp;Eliminar
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary mx-1"
+                                            onclick="window.open('/storage/files/download/{{ file.filename }}', '_blank')"
+                                            role="button">
                                             <i class="bi bi-download"></i>&nbsp;Descargar
                                         </button>
                                     </td>
@@ -121,7 +166,7 @@
         </div>
     </div>
 
-    <form action="/upload" method="POST" enctype="multipart/form-data" style="display: none;" id="upload_form">
+    <form action="" method="POST" enctype="multipart/form-data" style="display: none;" id="upload_form">
         <input type="file" id="upload_file" name="file">
     </form>
 
@@ -134,22 +179,14 @@
 </body>
 
 <script>
-    function watch(filename) {
-        $('#player')[0].innerHTML = `<video width="400" controls autoplay><source src="watch/${filename}">Your browser does not support the video tag.</video>`;
+    function watch(folder, filename) {
+        $('#player')[0].innerHTML = `<video width="400" controls autoplay><source src="/storage/${folder}/watch/${filename}">Your browser does not support the video tag.</video>`;
         $('#list').hide();
         $('#theater').show();
     }
 
-    function download(filename) {
-        window.open('/download/' + filename, '_blank')
-    }
-
-    function remove(filename) {
-        if (!confirm('¿Seguro desea eliminar el video?')) return;
-        location.href = '/delete?filename=' + filename;
-    }
-
-    function upload() {
+    function upload(folder) {
+        $('#upload_form')[0].action = `/storage/${folder}/upload`
         document.getElementById('upload_file').click();
     }
 
@@ -158,40 +195,17 @@
         location.href = '/login';
     }
 
-    function playpause() {
-        location.href = '/playpause';
-    }
-
     function home() {
         $('#player')[0].innerHTML = '';
         $('#list').show();
         $('#theater').hide();
     }
 
-    if (document.location.href.indexOf("?upload") > -1) {
-        document.getElementById('upload').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?file") > -1) {
-        document.getElementById('file').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?change") > -1) {
-        document.getElementById('change').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?delete") > -1) {
-        document.getElementById('delete').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?path") > -1) {
-        document.getElementById('path').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?exists") > -1) {
-        document.getElementById('exists').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?status") > -1) {
-        document.getElementById('status').style.display = 'flex';
-    }
-    if (document.location.href.indexOf("?usb") > -1) {
-        document.getElementById('usb').style.display = 'flex';
-    }
+    try {
+        var id = document.location.href.split('?');
+        document.getElementById(id[1]).style.display = 'flex';
+    } catch { }
+
     document.getElementById("upload_file").onchange = function () {
         document.getElementById("upload_form").submit();
     };

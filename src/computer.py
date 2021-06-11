@@ -1,13 +1,8 @@
 import os
 import sys
 
-_ip = ""
-
 
 def ip():
-    global _ip
-    if _ip != "":
-        return _ip
     try:
         import subprocess
         if sys.platform == 'win32':
@@ -19,18 +14,17 @@ def ip():
             while b'' in ip:
                 ip.remove(b'')
             ip = ip[3].decode('utf-8')
-            _ip = ip
         else:
             ip = subprocess.Popen(['hostname', '--all-ip-addresses'],  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             ip, _ = ip.communicate()
             ip = ip.split(b' ')
-            _ip = ip[0].decode('utf-8')
+            ip = ip[0].decode('utf-8')
     except Exception as e:
         print(e)
-        _ip = name()
+        ip = name()
         pass
 
-    return _ip
+    return ip
 
 
 def name():

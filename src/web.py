@@ -42,8 +42,9 @@ def autoplay():
     global _timeout
     if _timeout != None:
         _timeout.cancel()
-    _timeout = threading.Timer(5*60.0, _autoplay)
-    _timeout.start()
+    if app.autoplay:
+        _timeout = threading.Timer(5*60.0, _autoplay)
+        _timeout.start()
 
 
 def status():
@@ -174,8 +175,9 @@ def run():
     app.run(host='0.0.0.0', port=8080)
 
 
-def start(secret):
+def start(secret, autoplay):
     app.secret = secret
+    app.autoplay = autoplay
     daemon = threading.Thread(target=run, daemon=True)
     daemon.setDaemon(True)
     daemon.start()

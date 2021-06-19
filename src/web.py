@@ -1,21 +1,18 @@
 from flask import Flask, request, redirect, send_from_directory, render_template
 from pathlib import Path
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_socketio import SocketIO, emit
 import os
 import urllib
 import time
 import threading
 from src import vlc, drive, computer
 from urllib.parse import unquote
+from datetime import datetime
+from termcolor import colored
 
 
 app = Flask(__name__, template_folder="../static")
-limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-    default_limits=["20 per minute"]
-)
+socketio = SocketIO(app, cors_allowed_origins='*')
 
 storage = os.path.realpath(os.path.join(Path(__file__).parent, '../storage'))
 if not os.path.exists(storage):
@@ -34,17 +31,17 @@ _timeout = None
 
 def _autoplay():
     global _status, _lstatus
+    os.system('taskkill /f /im msedge.exe >nul 2>&1')
     with _lstatus:
         _status = "play"
 
 
-def autoplay():
+def autoplay(time=5*60.0):
     global _timeout
     if _timeout != None:
         _timeout.cancel()
-    if app.autoplay:
-        _timeout = threading.Timer(5*60.0, _autoplay)
-        _timeout.start()
+    _timeout = threading.Timer(time, _autoplay)
+    _timeout.start()
 
 
 def status():
@@ -55,11 +52,60 @@ def status():
         return _status
 
 
+def addr():
+    if request.headers.get("X-Forwarded-For"):
+        return request.headers.get("X-Forwarded-For")
+    else:
+        return request.remote_addr
+
+
+@socketio.on('connect')
+def on_connect():
+    if addr() != "127.0.0.1" and request.cookies.get('secret') != app.secret:
+        return False
+
+
+@socketio.on('projector-ready')
+def projector_ready(id):
+    emit('projector-ready', id, broadcast=True)
+
+
+@socketio.on('projector-keep')
+def projector_keep():
+    autoplay(time=15.0)
+
+
+@socketio.on('cast')
+def cast():
+    global _status, _lstatus
+    with _lstatus:
+        _status = "pause"
+    vlc.stop()
+    autoplay(time=15.0)
+    os.system('taskkill /f /im msedge.exe >nul 2>&1')
+    os.system('start /b "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --kiosk http://localhost:5000/projector --edge-kiosk-type=fullscreen')
+    return 200
+
+
+@app.before_request
+def before_request_func():
+    now = datetime.now()
+    log = colored(now.strftime("%H:%M:%S"), 'blue') + " → " + request.path
+    print(log)
+
+
 @app.route('/login')
 def login():
     if request.cookies.get('secret') == app.secret:
         return redirect('/')
     return render_template('login.html', name=computer.name())
+
+
+@app.route('/projector')
+def projector():
+    if addr() != '127.0.0.1':
+        return redirect('/')
+    return render_template('projector.html')
 
 
 @app.route("/")
@@ -140,8 +186,10 @@ def api(folder, action, file=""):
         if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
             return redirect('/?path')
 
-        if status() == "play":
-            return redirect('/?status')
+        if vlc.check():
+            vlc.stop()
+            time.sleep(1)
+            autoplay()
 
         os.remove(path)
         return redirect('/?delete')
@@ -161,8 +209,10 @@ def api(folder, action, file=""):
         if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
             return redirect('/?path')
 
-        if status() == "play":
-            return redirect('/?status')
+        if vlc.check():
+            vlc.stop()
+            time.sleep(1)
+            autoplay()
 
         file.save(path)
         return redirect('/?upload')
@@ -172,12 +222,11 @@ def api(folder, action, file=""):
 
 def run():
     app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.run(host='0.0.0.0', port=8080)
+    socketio.run(app, host='0.0.0.0', port=5000)
 
 
-def start(secret, autoplay):
+def start(secret):
     app.secret = secret
-    app.autoplay = autoplay
     daemon = threading.Thread(target=run, daemon=True)
     daemon.setDaemon(True)
     daemon.start()

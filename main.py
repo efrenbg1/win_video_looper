@@ -7,6 +7,6 @@ gui.paint()
 
 worker.start()
 
-web.start(settings.secret, settings.autoplay)
+web.start(settings.secret)
 
 gui.loop()

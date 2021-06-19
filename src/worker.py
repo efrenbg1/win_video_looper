@@ -2,6 +2,7 @@ from queue import Queue
 from threading import Thread
 import os
 
+
 def _task(q):
     import time
     from src import vlc, gui, drive, web
@@ -28,6 +29,9 @@ def _task(q):
             l = []
             for f in files:
                 l.append(os.path.join('files', f))
+                for f in featured:
+                    l.append(os.path.join('featured', f))
+            if len(l) == 0:
                 for f in featured:
                     l.append(os.path.join('featured', f))
 

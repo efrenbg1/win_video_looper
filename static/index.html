@@ -16,6 +16,8 @@
         body {
             background: url('img/background.jpg') no-repeat center fixed;
             background-size: cover;
+            min-height: 100vh;
+            min-width: 100vw;
         }
     </style>
 </head>
@@ -224,38 +226,56 @@
         keyboard: false
     });
 
-    var socket, peer, interval, currentStream;
+    var socket, peer, interval, currentStream, projector;
 
     function cast() {
+        if (/Mobi/.test(navigator.userAgent)) {
+            alert("Proyectar la pantalla no es compatible con dispositivos móviles.\n\nSe recomienda usar un ordenador Windows o Apple con Chrome, Edge o Safari.");
+            return;
+        }
+        clearInterval(interval);
         if (currentStream != undefined) {
             currentStream.getTracks().forEach(n => { n.stop() });
+            currentStream = undefined;
         }
-        if (socket == undefined || !socket.connected) {
-            socket = io();
-            socket.on('projector-ready', id => {
-                navigator.mediaDevices.getDisplayMedia({ audio: false, video: true })
-                    .then(stream => {
-                        currentStream = stream;
-                        peer.call(id, stream);
-                        stream.oninactive = () => { clearInterval(interval) };
-                    })
-                    .catch(function (err) {
-                        console.log(err.name, err.message);
-                    });
-                clearInterval(interval);
-                interval = setInterval(function () {
-                    socket.emit('projector-keep');
-                }, 5000);
+        var constraints = {
+            audio: false,
+            video: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }
+        };
+        navigator.mediaDevices.getDisplayMedia(constraints).then(stream => {
+            currentStream = stream;
+            if (socket == undefined || !socket.connected) {
+                socket = io();
+                socket.on('projector-ready', id => {
+                    peer.call(id, stream);
+                    stream.oninactive = () => { clearInterval(interval) };
+                    interval = setInterval(() => {
+                        socket.emit('projector-keep');
+                    }, 5000);
+                });
+                socket.on('projector-stop', function () {
+                    if (currentStream != undefined) {
+                        currentStream.getTracks().forEach(n => { n.stop() });
+                    }
+                    socket.disconnect();
+                    if (peer != undefined) {
+                        peer.disconnect();
+                    }
+                });
+            }
+
+            if (peer == undefined || peer.disconnected) {
+                peer = new Peer();
+            }
+
+            socket.emit('cast', response => {
+                console.log(response);
             });
-        }
+        }).catch(err => { alert(err) });
 
-        if (peer == undefined || peer.disconnected) {
-            peer = new Peer();
-        }
-
-        socket.emit('cast', response => {
-            console.log(response);
-        });
     }
 </script>
 

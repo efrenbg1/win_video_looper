@@ -80,6 +80,7 @@ def cast():
     global _status, _lstatus
     with _lstatus:
         _status = "pause"
+    emit('projector-stop', broadcast=True, include_self=False)
     vlc.stop()
     autoplay(time=15.0)
     os.system('taskkill /f /im msedge.exe >nul 2>&1')

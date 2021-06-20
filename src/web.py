@@ -9,6 +9,7 @@ from src import vlc, drive, computer
 from urllib.parse import unquote
 from datetime import datetime
 from termcolor import colored
+import subprocess
 
 
 app = Flask(__name__, template_folder="../static")
@@ -24,14 +25,14 @@ storage2 = os.path.realpath(os.path.join(Path(__file__).parent, '../storage/feat
 if not os.path.exists(storage2):
     os.makedirs(storage2)
 
-_status = "play"
+_status = "pause"
 _lstatus = threading.Lock()
 _timeout = None
 
 
 def _autoplay():
     global _status, _lstatus
-    os.system('taskkill /f /im msedge.exe >nul 2>&1')
+    os.system('taskkill /f /im chrome.exe >nul 2>&1')
     with _lstatus:
         _status = "play"
 
@@ -41,7 +42,7 @@ def autoplay(time=5*60.0):
     if _timeout != None:
         _timeout.cancel()
     _timeout = threading.Timer(time, _autoplay)
-    _timeout.start()
+    # _timeout.start()
 
 
 def status():
@@ -54,14 +55,14 @@ def status():
 
 def addr():
     if request.headers.get("X-Forwarded-For"):
-        return request.headers.get("X-Forwarded-For")
+        return request.headers.get("X-Forwarded-For").split(',')[0]
     else:
         return request.remote_addr
 
 
 @socketio.on('connect')
 def on_connect():
-    if addr() != "127.0.0.1" and request.cookies.get('secret') != app.secret:
+    if addr() != computer.ip() and request.cookies.get('secret') != app.secret:
         return False
 
 
@@ -83,8 +84,9 @@ def cast():
     emit('projector-stop', broadcast=True, include_self=False)
     vlc.stop()
     autoplay(time=15.0)
-    os.system('taskkill /f /im msedge.exe >nul 2>&1')
-    os.system('start /b "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --kiosk http://localhost:5000/projector --edge-kiosk-type=fullscreen')
+    os.system('taskkill /f /im chrome.exe >nul 2>&1')
+    chrome = os.path.join('C:\\', 'Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe')
+    os.spawnl(os.P_DETACH, chrome, '--kiosk', 'https://proyector.boyarizo.es/projector')
     return 200
 
 
@@ -104,7 +106,7 @@ def login():
 
 @app.route('/projector')
 def projector():
-    if addr() != '127.0.0.1':
+    if addr() != computer.ip():
         return redirect('/')
     return render_template('projector.html')
 

@@ -41,6 +41,7 @@
         });
 
         peer.on('open', function (id) {
+            console.log(peer.id)
             socket.emit('projector-ready', peer.id);
         });
     </script>

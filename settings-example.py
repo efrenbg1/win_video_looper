@@ -1,2 +1,2 @@
 secret = "password"
-domain = "prokector.domain.com"
+domain = "projector.domain.com"

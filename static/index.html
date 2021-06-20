@@ -190,6 +190,7 @@
 </body>
 
 <script>
+
     function watch(folder, filename) {
         $('#player')[0].innerHTML = `<video width="400" controls autoplay><source src="/storage/${folder}/watch/${filename}">Your browser does not support the video tag.</video>`;
         $('#list').hide();
@@ -225,58 +226,8 @@
         backdrop: 'static',
         keyboard: false
     });
-
-    var socket, peer, interval, currentStream, projector;
-
-    function cast() {
-        if (/Mobi/.test(navigator.userAgent)) {
-            alert("Proyectar la pantalla no es compatible con dispositivos móviles.\n\nSe recomienda usar un ordenador Windows o Apple con Chrome, Edge o Safari.");
-            return;
-        }
-        clearInterval(interval);
-        if (currentStream != undefined) {
-            currentStream.getTracks().forEach(n => { n.stop() });
-            currentStream = undefined;
-        }
-        var constraints = {
-            audio: false,
-            video: {
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            }
-        };
-        navigator.mediaDevices.getDisplayMedia(constraints).then(stream => {
-            currentStream = stream;
-            if (socket == undefined || !socket.connected) {
-                socket = io();
-                socket.on('projector-ready', id => {
-                    peer.call(id, stream);
-                    stream.oninactive = () => { clearInterval(interval) };
-                    interval = setInterval(() => {
-                        socket.emit('projector-keep');
-                    }, 5000);
-                });
-                socket.on('projector-stop', function () {
-                    if (currentStream != undefined) {
-                        currentStream.getTracks().forEach(n => { n.stop() });
-                    }
-                    socket.disconnect();
-                    if (peer != undefined) {
-                        peer.disconnect();
-                    }
-                });
-            }
-
-            if (peer == undefined || peer.disconnected) {
-                peer = new Peer();
-            }
-
-            socket.emit('cast', response => {
-                console.log(response);
-            });
-        }).catch(err => { alert(err) });
-
-    }
 </script>
+
+<script src="/cast.js"></script>
 
 </html>

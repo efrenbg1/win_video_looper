@@ -14,15 +14,22 @@
             justify-content: center;
         }
 
-        video {
-            min-width: 100vw;
+        .fitWidth {
+            width: 100vw;
+        }
+
+        .fitHeight {
+            height: 100vh;
         }
     </style>
 </head>
 
 <body>
-    <video autoplay></video>
+    <video autoplay class="fitWidth"></video>
 
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
         integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
         crossorigin="anonymous"></script>
@@ -31,12 +38,14 @@
         var socket = io();
         var peer = new Peer();
 
+        var video;
+
         peer.on('call', function (call) {
-            console.log(call);
             call.answer();
             call.on('stream', function (stream) {
                 var video = document.querySelector('video');
                 video.srcObject = stream;
+                setInterval(resize, 1000);
             });
         });
 
@@ -44,6 +53,18 @@
             console.log(peer.id)
             socket.emit('projector-ready', peer.id);
         });
+
+        function resize() {
+            var video = document.querySelector('video');
+            var settings = video.srcObject.getVideoTracks()[0].getSettings();
+            if (settings.aspectRatio > ($(window).width() / $(window).height())) {
+                video.classList.remove('fitHeight');
+                video.classList.add('fitWidth');
+            } else {
+                video.classList.remove('fitWidth');
+                video.classList.add('fitHeight');
+            }
+        }
     </script>
 </body>
 

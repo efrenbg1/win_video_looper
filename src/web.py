@@ -9,7 +9,7 @@ from src import vlc, drive, computer
 from urllib.parse import unquote
 from datetime import datetime
 from termcolor import colored
-import subprocess
+from queue import Queue
 
 
 app = Flask(__name__, template_folder="../static")
@@ -25,24 +25,32 @@ storage2 = os.path.realpath(os.path.join(Path(__file__).parent, '../storage/feat
 if not os.path.exists(storage2):
     os.makedirs(storage2)
 
-_status = "pause"
+_status = "play"
 _lstatus = threading.Lock()
 _timeout = None
+_casting = None
+_lcasting = threading.Lock()
 
 
 def _autoplay():
-    global _status, _lstatus
-    os.system('taskkill /f /im chrome.exe >nul 2>&1')
+    global _status, _lstatus, _casting, _lcasting
+    with _lcasting:
+        if _casting != None:
+            with _lstatus:
+                _status = "pause"
+            autoplay(time=15.0)
+            return
+    os.system('taskkill /f /im msedge.exe >nul 2>&1')
     with _lstatus:
         _status = "play"
 
 
-def autoplay(time=5*60.0):
+def autoplay(time=15.0):
     global _timeout
     if _timeout != None:
         _timeout.cancel()
     _timeout = threading.Timer(time, _autoplay)
-    # _timeout.start()
+    _timeout.start()
 
 
 def status():
@@ -62,8 +70,16 @@ def addr():
 
 @socketio.on('connect')
 def on_connect():
-    if addr() != computer.ip() and request.cookies.get('secret') != app.secret:
+    if addr() != '127.0.0.1' and request.cookies.get('secret') != app.secret:
         return False
+
+
+@socketio.on('disconnect')
+def on_disconnect():
+    global _casting, _lcasting
+    with _lcasting:
+        if _casting == request.sid:
+            _casting = None
 
 
 @socketio.on('projector-ready')
@@ -71,22 +87,18 @@ def projector_ready(id):
     emit('projector-ready', id, broadcast=True)
 
 
-@socketio.on('projector-keep')
-def projector_keep():
-    autoplay(time=15.0)
-
-
 @socketio.on('cast')
 def cast():
-    global _status, _lstatus
+    global _lstatus, _status, _lcasting, _casting
     with _lstatus:
         _status = "pause"
-    emit('projector-stop', broadcast=True, include_self=False)
     vlc.stop()
     autoplay(time=15.0)
-    os.system('taskkill /f /im chrome.exe >nul 2>&1')
-    chrome = os.path.join('C:\\', 'Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe')
-    os.spawnl(os.P_DETACH, chrome, '--kiosk', 'https://proyector.boyarizo.es/projector')
+    with _lcasting:
+        _casting = request.sid
+    emit('projector-stop', broadcast=True, include_self=False)
+    os.system('taskkill /f /im msedge.exe >nul 2>&1')
+    os.system('start /b "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --kiosk http://localhost:5000/projector --edge-kiosk-type=fullscreen')
     return 200
 
 
@@ -106,7 +118,7 @@ def login():
 
 @app.route('/projector')
 def projector():
-    if addr() != computer.ip():
+    if addr() != '127.0.0.1':
         return redirect('/')
     return render_template('projector.html')
 
@@ -163,6 +175,8 @@ def static_files(path):
 @app.route('/storage/<folder>/<action>/<file>')
 @app.route('/storage/<folder>/<action>', methods=["POST"])
 def api(folder, action, file=""):
+    global _lstatus, _status
+
     if request.cookies.get('secret') != app.secret:
         return redirect('/login')
 
@@ -179,9 +193,6 @@ def api(folder, action, file=""):
         return send_from_directory(folder, file, as_attachment=True)
 
     elif action == "delete" and request.method == "GET":
-        global _lstatus
-        autoplay()
-
         if file not in os.listdir(folder):
             return redirect('/?path')
 
@@ -189,17 +200,16 @@ def api(folder, action, file=""):
         if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
             return redirect('/?path')
 
-        if vlc.check():
-            vlc.stop()
-            time.sleep(1)
-            autoplay()
+        with _lstatus:
+            _status = "pause"
+        vlc.stop()
+        time.sleep(1)
+        autoplay()
 
         os.remove(path)
         return redirect('/?delete')
 
     elif action == "upload" and request.method == "POST":
-        autoplay()
-
         file = request.files.get('file')
         if file is None:
             return redirect('/?file')
@@ -212,10 +222,11 @@ def api(folder, action, file=""):
         if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
             return redirect('/?path')
 
-        if vlc.check():
-            vlc.stop()
-            time.sleep(1)
-            autoplay()
+        with _lstatus:
+            _status = "pause"
+        vlc.stop()
+        time.sleep(1)
+        autoplay()
 
         file.save(path)
         return redirect('/?upload')

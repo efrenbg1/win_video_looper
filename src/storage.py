@@ -24,7 +24,7 @@ def read():
     l = []
     for f in l1:
         l.append(os.path.join('files', f))
-        for f in featured:
+        for f in l2:
             l.append(os.path.join('featured', f))
     if len(l) == 0:
         for f in l2:

@@ -25,7 +25,7 @@ def pause():
     vlc.stop()
     if _timeout != None:
         _timeout.cancel()
-    _timeout = threading.Timer(1.0, play)
+    _timeout = threading.Timer(15.0, play)
     _timeout.start()
 
 
@@ -71,4 +71,4 @@ def start():
     daemon = threading.Thread(target=_task, daemon=True)
     daemon.setDaemon(True)
     daemon.start()
-    # play()
+    play()

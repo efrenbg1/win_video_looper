@@ -32,15 +32,10 @@
                     <div class="row d-flex justify-content-center mt-3 mb-4">
                         <h6><span class="text-info">{{ name }}</span> - Win Video Looper</h6>
                     </div>
-                    <div class="row d-flex justify-content-center mt-3">
-                        <div class="form-group">
-                            <label>Introduzca la contraseña para continuar:</label>
-                            <input type="text" class="form-control" id="cookie">
+                    <div class="row d-flex justify-content-center mt-3 mb-0">
+                        <div class="alert alert-danger mx-2 my-0" role="alert">
+                            Para continuar es necesario estar conectado a la red local
                         </div>
-
-                    </div>
-                    <div class="row d-flex justify-content-center">
-                        <button type="button" class="btn btn-primary" onclick="login()">Entrar</button>
                     </div>
                 </div>
             </div>
@@ -60,17 +55,6 @@
     $('#modal').modal({
         backdrop: 'static',
         keyboard: false
-    });
-
-    function login() {
-        document.cookie = "secret=" + $('#cookie')[0].value;
-        location.href = '/';
-    }
-
-    document.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            login();
-        }
     });
 </script>
 

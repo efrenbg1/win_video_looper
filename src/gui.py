@@ -44,7 +44,7 @@ def paint():
 
 def waiting():
     global _label, _img, _path
-    _label.config(text='\n\nPara añadir archivos o proyectar la\npantalla vaya a:\n\nhttps://{}\n\n\n(Esc para salir)'.format(settings.domain, settings.domain))
+    _label.config(text='\n\nPara añadir archivos o proyectar la\npantalla vaya a:\n\nhttps://{}\n\n\n\n(Esc para salir)'.format(settings.domain, settings.domain))
     img = ImageTk.PhotoImage(file=os.path.join(_path, "usb.png"))
     _img.configure(image=img)
     _img.image = img

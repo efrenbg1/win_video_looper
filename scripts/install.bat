@@ -1,1 +1,1 @@
-pip install Pillow flask Flask-Limiter psutil termcolor flask-socketio
+pip install Pillow flask psutil termcolor flask-socketio eventlet

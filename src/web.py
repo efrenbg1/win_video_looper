@@ -112,6 +112,11 @@ def root():
     return render_template('index.html', name=computer.name(), featured=featured, files=files)
 
 
+@app.route('/403')
+def outsider():
+    return render_template('outsider.html', name=computer.name())
+
+
 @app.route('/<path:path>')
 def static_files(path):
     return send_from_directory('../static/', path)

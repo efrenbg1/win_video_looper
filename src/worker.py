@@ -1,83 +1,74 @@
-from queue import Queue
-from threading import Thread
-import os
+from src import vlc, gui, web, browser, storage
+import threading
+import time
+
+_status = "pause"
+_lstatus = threading.Lock()
+_timeout = None
 
 
-def _task(q):
-    import time
-    from src import vlc, gui, drive, web
+def play():
+    global _lstatus, _status
+    if web.casting():
+        pause()
+        return
+    with _lstatus:
+        _status = "play"
+    vlc.stop()
+    browser.stop()
 
+
+def pause():
+    global _lstatus, _status, _timeout
+    with _lstatus:
+        _status = "pause"
+    vlc.stop()
+    if _timeout != None:
+        _timeout.cancel()
+    _timeout = threading.Timer(1.0, play)
+    _timeout.start()
+
+
+def status():
+    global _lstatus, _status
+    with _lstatus:
+        return _status
+
+
+def _task():
     while True:
-        if not q.empty():
-            vlc.stop()
-            exit()
 
         gui.waiting()
 
-        usb = drive.find()
+        if status() == "pause":
+            time.sleep(5)
+            continue
 
-        if usb is None:
-            if web.status() != 'play':
-                time.sleep(5)
-                continue
-            files = drive.read(web.storage1)
-            featured = drive.read(web.storage2)
-            if not len(files) and not len(featured):
-                time.sleep(5)
-                continue
+        l = storage.read()
 
-            l = []
-            for f in files:
-                l.append(os.path.join('files', f))
-                for f in featured:
-                    l.append(os.path.join('featured', f))
-            if len(l) == 0:
-                for f in featured:
-                    l.append(os.path.join('featured', f))
-
-            files = l
-            usb = web.storage
-            mode = 'web'
-        else:
-            gui.reading()
-            files = drive.read(usb)
-            if not len(files):
-                gui.empty()
-                time.sleep(15)
-                continue
-            mode = 'usb'
+        if not len(l):
+            time.sleep(5)
+            continue
 
         try:
-            vlc.play(usb, files)
+            vlc.play(storage.directory, l)
             gui.playing()
             while True:
-                if mode == 'web' and (web.status() != 'play' or drive.find() != None):
+                if status() == 'pause':
                     break
-                if mode == 'usb' and drive.find() != usb:
-                    break
-                if not q.empty():
-                    vlc.stop()
-                    exit()
                 if not vlc.check():
                     break
                 time.sleep(1)
         except Exception as e:
             print(e)
-            vlc.stop()
-            exit()
+            pass
 
         gui.paint()
         vlc.stop()
 
 
-_q = Queue()
-
-
 def start():
-    global _q
-    Thread(target=_task, args=(_q, )).start()
-
-
-def stop():
-    global _q
-    _q.put(True)
+    daemon = threading.Thread(target=_task, daemon=True)
+    daemon.setDaemon(True)
+    daemon.start()
+    # play()

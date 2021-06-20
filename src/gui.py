@@ -2,7 +2,8 @@ from tkinter import messagebox, Label, Tk
 from PIL import ImageTk
 from PIL import Image
 import os
-from src import vlc, worker, computer
+from src import vlc, browser
+import settings
 
 title = "Video Looper"
 
@@ -43,7 +44,7 @@ def paint():
 
 def waiting():
     global _label, _img, _path
-    _label.config(text='Para reproducir en bucle:\n\n1. Inserte un dispositivo USB\n2. O vaya a: http://{}:8080\n\n\n(Esc para salir)'.format(computer.ip()))
+    _label.config(text='\n\nPara añadir archivos o proyectar la\npantalla vaya a:\n\nhttps://{}\n\n\n(Esc para salir)'.format(settings.domain, settings.domain))
     img = ImageTk.PhotoImage(file=os.path.join(_path, "usb.png"))
     _img.configure(image=img)
     _img.image = img
@@ -65,14 +66,6 @@ def playing():
     root.configure(background='black')
 
 
-def empty():
-    global _label, _img, _path
-    _label.config(text='¡No se han encontrado archivos\npara reproducir!')
-    img = ImageTk.PhotoImage(file=os.path.join(_path, "empty.png"))
-    _img.configure(image=img)
-    _img.image = img
-
-
 def esc(event):
     close()
 
@@ -80,7 +73,7 @@ def esc(event):
 def close():
     if messagebox.askokcancel("Quit", "Si se cierra el programa no se auto reproducirán los videos. ¿Seguro desea salir?"):
         vlc.stop()
-        worker.stop()
+        browser.stop()
         root.destroy()
 
 

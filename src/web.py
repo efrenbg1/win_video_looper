@@ -36,7 +36,7 @@ def addr():
 
 @socketio.on('connect')
 def on_connect():
-    if addr() != '127.0.0.1' and request.cookies.get('secret') != settings.secret:
+    if addr() != computer.ip() and request.cookies.get('secret') != settings.secret:
         return False
 
 
@@ -48,9 +48,9 @@ def on_disconnect():
             _casting = None
 
 
-@socketio.on('projector-ready')
-def projector_ready(id):
-    emit('projector-ready', id, broadcast=True)
+@socketio.on('signal')
+def signal(data):
+    socketio.emit('signal', data, broadcast=True, include_self=False)
 
 
 @socketio.on('cast')
@@ -59,7 +59,7 @@ def cast():
     worker.pause()
     with _lcasting:
         _casting = request.sid
-    emit('projector-stop', broadcast=True, include_self=False)
+    emit('stop', broadcast=True, include_self=False)
     browser.start()
     return 200
 
@@ -80,7 +80,7 @@ def login():
 
 @app.route('/projector')
 def projector():
-    if addr() != '127.0.0.1':
+    if addr() != computer.ip():
         return redirect('/')
     return render_template('projector.html')
 

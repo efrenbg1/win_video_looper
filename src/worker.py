@@ -1,38 +1,15 @@
-from src import vlc, gui, web, browser, storage
+from src import vlc, gui, browser, storage, fsm
 import threading
 import time
 
-_status = "pause"
-_lstatus = threading.Lock()
-_timeout = None
-
 
 def play():
-    global _lstatus, _status
-    if web.casting():
-        pause()
+    if fsm.get() == "casting":
+        vlc.stop()
         return
-    with _lstatus:
-        _status = "play"
+    fsm.set("play", timeout=5)
     vlc.stop()
     browser.stop()
-
-
-def pause():
-    global _lstatus, _status, _timeout
-    with _lstatus:
-        _status = "pause"
-    vlc.stop()
-    if _timeout != None:
-        _timeout.cancel()
-    _timeout = threading.Timer(15.0, play)
-    _timeout.start()
-
-
-def status():
-    global _lstatus, _status
-    with _lstatus:
-        return _status
 
 
 def _task():
@@ -40,7 +17,7 @@ def _task():
 
         gui.waiting()
 
-        if status() == "pause":
+        if fsm.get() != "play":
             time.sleep(5)
             continue
 
@@ -54,7 +31,7 @@ def _task():
             vlc.play(storage.directory, l)
             gui.playing()
             while True:
-                if status() == 'pause':
+                if fsm.get() != 'play':
                     break
                 if not vlc.check():
                     break

@@ -4,7 +4,7 @@ import os
 import urllib
 import time
 import threading
-from src import computer, browser, storage, worker
+from src import computer, browser, storage, worker, fsm, vlc
 import settings
 from urllib.parse import unquote
 from datetime import datetime
@@ -17,14 +17,6 @@ socketio = SocketIO(app, cors_allowed_origins='*')
 
 _casting = None
 _lcasting = threading.Lock()
-
-
-def casting():
-    global _casting, _lcasting
-    with _lcasting:
-        if _casting != None:
-            return True
-    return
 
 
 def addr():
@@ -46,6 +38,7 @@ def on_disconnect():
     with _lcasting:
         if _casting == request.sid:
             _casting = None
+            fsm.set("play", timeout=15)
 
 
 @socketio.on('signal')
@@ -56,9 +49,10 @@ def signal(data):
 @socketio.on('cast')
 def cast():
     global _lstatus, _status, _lcasting, _casting
-    worker.pause()
     with _lcasting:
         _casting = request.sid
+        fsm.set("casting")
+    vlc.stop()
     emit('stop', broadcast=True, include_self=False)
     browser.start()
     return 200
@@ -149,8 +143,10 @@ def api(folder, action, file=""):
         if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
             return redirect('/?path')
 
-        worker.pause()
+        fsm.set("pause")
+        vlc.stop()
         time.sleep(1)
+        fsm.set("play", timeout=5)
 
         os.remove(path)
         return redirect('/?delete')
@@ -168,8 +164,10 @@ def api(folder, action, file=""):
         if os.path.commonprefix((os.path.realpath(path), folder)) != folder:
             return redirect('/?path')
 
-        worker.pause()
+        fsm.set("pause")
+        vlc.stop()
         time.sleep(1)
+        fsm.set("play", timeout=5)
 
         file.save(path)
         return redirect('/?upload')

@@ -2,7 +2,7 @@ import threading
 import time
 import queue
 
-_state = "play"
+_state = "pause"
 _lstate = threading.Lock()
 
 _states = ["play", "pause", "casting"]
@@ -41,8 +41,9 @@ def run():
             continue
         if not isinstance(state[1], int):
             continue
-        print(state)
         time.sleep(state[1])
+        if not _q.empty():
+            continue
         with _lstate:
             _state = state[0]
 

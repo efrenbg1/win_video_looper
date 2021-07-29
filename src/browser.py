@@ -8,7 +8,7 @@ def stop():
     if sys.platform == 'win32':
         os.system('taskkill /f /im msedge.exe >nul 2>&1')
     else:
-        os.system('pkill -9 chromium')
+        os.system('pkill -9 firefox')
 
 
 def start():
@@ -16,4 +16,4 @@ def start():
     if sys.platform == 'win32':
         os.system('start /b "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --kiosk https://{}/projector --edge-kiosk-type=fullscreen'.format(settings.domain))
     else:
-        subprocess.Popen(['chromium', '--start-fullscreen', '--kiosk', 'https://{}/projector'.format(settings.domain)])
+        subprocess.Popen(['firefox', '-kiosk', '-private-window', 'https://{}/projector'.format(settings.domain)])

@@ -2,7 +2,7 @@ server {
     server_name proyector.domain.com;
 
     allow  192.168.1.0/24;
-        deny   all;
+    deny   all;
 
     location / {
         proxy_pass http://192.168.1.6:5000;
@@ -13,13 +13,18 @@ server {
 
     error_page 403 /403;
 
-    location = /img/background.jpg{
-        proxy_pass http://192.168.1.6:5000/img/background.jpg;
+    location /img{
+        proxy_pass http://192.168.1.6:5000/img;
         allow all;
     }
 
-    location = /img/usb.png{
-        proxy_pass http://192.168.1.6:5000/img/usb.png;
+    location /js {
+        proxy_pass http://192.168.1.6:5000/js;
+        allow all;
+    }
+
+    location /css {
+        proxy_pass http://192.168.1.6:5000/css;
         allow all;
     }
 

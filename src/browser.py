@@ -16,4 +16,4 @@ def start():
     if sys.platform == 'win32':
         os.system('start /b "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --kiosk https://{}/projector --edge-kiosk-type=fullscreen'.format(settings.domain))
     else:
-        subprocess.Popen(['chromium-browser', '--start-fullscreen', '--kiosk', 'http://localhost:5000/projector'])
+        subprocess.Popen(['chromium', '--start-fullscreen', '--kiosk', 'https://{}/projector'.format(settings.domain)])

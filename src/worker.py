@@ -28,6 +28,7 @@ def _task():
             continue
 
         try:
+            browser.stop()
             vlc.play(storage.directory, l)
             gui.playing()
             while True:
